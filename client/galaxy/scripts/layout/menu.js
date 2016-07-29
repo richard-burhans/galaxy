@@ -67,18 +67,23 @@ var Collection = Backbone.Collection.extend({
         //
         // Lab menu.
         //
-        options.user_requests && this.add({
+        //options.user_requests &&
+        this.add({
             id              : 'lab',
             title           : 'Lab',
+            url             : '',
+            tooltip         : 'Lab tooltip',
             menu            : [{
-                    title   : 'Sequencing Requests',
-                    url     : 'requests/index'
-                },{
-                    title   : 'Find Samples',
-                    url     : 'requests/find_samples_index'
-                },{
-                    title   : 'Help',
-                    url     : options.lims_doc_url
+                    title   : 'Specimen Tracking',
+                    url     : 'specimens/index'
+                    //title   : 'Sequencing Requests',
+                    //url     : 'requests/index'
+                //},{
+                    //title   : 'Find Samples',
+                    //url     : 'requests/find_samples_index'
+                //},{
+                    //title   : 'Help',
+                    //url     : options.lims_doc_url
             }]
         });
 
