@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import and_, false, or_, not_
 from sqlalchemy.orm import eagerload_all
+from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy.util import listify
 from galaxy.util.bunch import Bunch
@@ -192,6 +194,31 @@ class GalaxyRBACAgent( RBACAgent ):
                         self.model.Role.table.c.type != self.model.Role.types.PRIVATE,
                         self.model.Role.table.c.type != self.model.Role.types.SHARING ) ) \
                     .order_by( self.model.Role.table.c.name )
+
+    def has_role( self, trans, role_id ):
+        """
+        Checks whether given user has given role by searching for exactly _one_ UserRoleAssociation in the database.
+        """
+        has_role = False
+        user = trans.user
+        role_association = None
+        try:
+            role_association =  trans.sa_session.query( trans.app.model.UserRoleAssociation ) \
+                                        .filter( and_( self.model.UserRoleAssociation.table.c.role_id == role_id,
+                                                       self.model.UserRoleAssociation.table.c.user_id == user.id ) ) \
+                                        .one()
+        except MultipleResultsFound:
+            raise exceptions.InconsistentDatabase( 'Multiple UserRoleAssociation found for user and role. User: ' + str( user.email ) )
+        except NoResultFound:
+            has_role = False
+        except Exception, e:
+            raise exceptions.InternalServerError( 'Error loading from the database.' + str( e ) )
+
+        # explicit check for role_id and user_id equalities
+        if ( role_association and role_association.role_id == role_id and  role_association.user_id == user.id ):
+            has_role = True
+
+        return has_role
 
     def get_all_roles( self, trans, cntrller ):
         admin_controller = cntrller in [ 'library_admin' ]
