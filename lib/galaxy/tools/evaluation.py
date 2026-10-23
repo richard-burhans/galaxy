@@ -138,10 +138,10 @@ def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)
-        if isinstance(e, ExpressionTemplateError):
-            # The job runner reports these to the user as they are; wrapping would hide the message.
-            raise
         message = f"Error occurred while {action_str.lower()} for tool '{tool.id}'"
+        if isinstance(e, ExpressionTemplateError):
+            # The job runner reports these to the user; wrapping would hide the message.
+            raise ExpressionTemplateError(f"{message}: {e}") from e
         if isinstance(e, WorkflowException) and isinstance(e.__cause__, ExpressionScriptError):
             # The tool's JavaScript raised: the error names the user's mistake.
             raise ExpressionTemplateError(f"{message}: {expression_error_message(e)}") from e

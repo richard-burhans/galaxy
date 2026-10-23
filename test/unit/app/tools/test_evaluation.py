@@ -403,3 +403,10 @@ def test_global_tool_logs_keeps_worker_failure_as_templating_error():
         global_tool_logs(
             lambda: do_eval("$(1 + 1)", {}, sandbox_command=["false"]), None, "Building Command Line", GLOBAL_LOGS_TOOL
         )
+
+
+def test_global_tool_logs_reports_unparseable_template_to_user():
+    with pytest.raises(
+        ExpressionTemplateError, match="for tool 'expression_tool': Unterminated expression in tool command template"
+    ):
+        global_tool_logs(lambda: do_eval('echo "$(date"', {}), None, "Building Command Line", GLOBAL_LOGS_TOOL)
