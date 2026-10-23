@@ -219,6 +219,7 @@ class TestUnprivilegedToolsApi(ApiTestCase, TestsTools):
             # The JavaScript error, not just "Error occurred while building command line".
             assert "Error occurred while building command line" in output["misc_info"], output["misc_info"]
             assert ": TypeError" in output["misc_info"], output["misc_info"]
+            assert "<input>" not in output["misc_info"], output["misc_info"]
 
     def test_create_unprivileged_rejects_unparseable_shell_command(self):
         """A shell_command with an unbalanced '$(' is refused at create time.
