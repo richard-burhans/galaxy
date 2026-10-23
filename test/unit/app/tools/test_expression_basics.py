@@ -446,6 +446,11 @@ def test_expression_error_message_keeps_thrown_string_starting_with_at():
     assert expression_error_message(exc.value) == "at least one input is required"
 
 
+def test_expression_error_message_names_a_timeout():
+    exc = WorkflowException("Expression evaluation error:\nInternalError: interrupted\n    at <eval> (<input>:8:3)\n")
+    assert expression_error_message(exc) == "InternalError: interrupted (the expression timed out)"
+
+
 def test_escaped_command_substitution_survives_evaluation():
     # What the error message tells authors to write has to actually work.
     assert do_eval("echo \\$(date) > $(inputs.out)", {"out": "out.txt"}) == "echo $(date) > out.txt"
