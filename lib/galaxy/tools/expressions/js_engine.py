@@ -70,6 +70,10 @@ BUBBLEWRAP_SYSTEM_PATHS = (
 log = logging.getLogger(__name__)
 
 
+class ExpressionScriptError(JavascriptException):
+    """The worker ran the expression and the JavaScript itself raised."""
+
+
 def _bubblewrap_command(bwrap: str) -> tuple[str, ...]:
     """Build the built-in bubblewrap jail command.
 
@@ -221,7 +225,7 @@ def _evaluate_in_subprocess(program: str, timeout: float, sandbox_command: Seque
         if not isinstance(response, dict):
             raise ValueError("Expected a response object")
         if "error" in response:
-            raise JavascriptException(str(response["error"])[:500])
+            raise ExpressionScriptError(str(response["error"])[:500])
         return cast(CWLOutputType, response["result"])
     except (ValueError, KeyError, RecursionError) as e:
         raise JavascriptException("Malformed response from expression worker") from e

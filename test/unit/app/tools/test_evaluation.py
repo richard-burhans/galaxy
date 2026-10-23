@@ -4,6 +4,8 @@ from typing import (
     TYPE_CHECKING,
 )
 
+import pytest
+
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
@@ -18,7 +20,15 @@ from galaxy.model import (
 )
 from galaxy.tool_util.parser.output_objects import ToolOutput
 from galaxy.tool_util_models.tool_source import XmlTemplateConfigFile
-from galaxy.tools.evaluation import ToolEvaluator
+from galaxy.tools.evaluation import (
+    global_tool_logs,
+    ToolEvaluator,
+    ToolTemplatingException,
+)
+from galaxy.tools.expressions import (
+    do_eval,
+    ExpressionTemplateError,
+)
 
 # For MockTool
 from galaxy.tools.parameters import params_from_strings
@@ -376,3 +386,20 @@ class MockTool:
 
     def exec_before_job(self, *args, **kwargs):
         pass
+
+
+GLOBAL_LOGS_TOOL = Bunch(id="expression_tool", version="1.0", is_latest_version=True)
+
+
+def test_global_tool_logs_reports_javascript_error_to_user():
+    with pytest.raises(ExpressionTemplateError, match="for tool 'expression_tool': TypeError"):
+        global_tool_logs(
+            lambda: do_eval("$(inputs.x.elements[0].path)", {"x": []}), None, "Building Command Line", GLOBAL_LOGS_TOOL
+        )
+
+
+def test_global_tool_logs_keeps_worker_failure_as_templating_error():
+    with pytest.raises(ToolTemplatingException):
+        global_tool_logs(
+            lambda: do_eval("$(1 + 1)", {}, sandbox_command=["false"]), None, "Building Command Line", GLOBAL_LOGS_TOOL
+        )
