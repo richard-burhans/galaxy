@@ -32,7 +32,7 @@ STACK_FRAME_RE = re.compile(r"^at (?:<input>:\d+:\d+|.+ \((?:<input>:\d+:\d+|nat
 
 
 class ExpressionTemplateError(MessageException):
-    """A ``$(...)``/``${...}`` block in a tool template does not parse."""
+    """A ``$(...)``/``${...}`` block in a tool template could not be parsed or evaluated; shown to the user."""
 
 
 def validate_expression_template(expression: str, description: str = "command template") -> None:
