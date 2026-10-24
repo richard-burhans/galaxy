@@ -571,9 +571,10 @@ class WorkflowInvocationCollectionView(Model, WithModelClass):
         default=...,
         title="Invocation state",
         description=(
-            "State of workflow invocation. `completed` means every job reached a terminal state "
-            "(ok, error, deleted, skipped, paused or stopped), not that every job succeeded; "
-            "see `job_state_summary` in `/api/invocations/{invocation_id}/completion`."
+            "State of the workflow invocation. An invocation is `completed` once all of its jobs have "
+            "reached a terminal state (ok, error, deleted, skipped, paused or stopped), so a completed "
+            "invocation can contain failed jobs. `GET /api/invocations/{invocation_id}/completion` "
+            "returns `job_state_summary`, the job counts per state at the time of completion."
         ),
     )
     landing_uuid: UUID4 | None = Field(
