@@ -58,6 +58,7 @@ from galaxy.tools.actions import determine_output_format
 from galaxy.tools.expressions import (
     do_eval,
     expression_error_message,
+    ExpressionScriptError,
     ExpressionTemplateError,
 )
 from galaxy.tools.parameters import (
@@ -134,21 +135,18 @@ class ToolTemplatingException(Exception):
 def global_tool_logs(func, config_file: Optional[StrPath], action_str: str, tool: "Tool"):
     try:
         return func()
-    except ExpressionTemplateError as e:
-        # The job runner reports these to the user as they are; wrapping would hide the message.
-        global_tool_errors.add_error(config_file, action_str, e)
-        raise
-    except WorkflowException as e:
-        # A JavaScript expression in the tool failed: the error names the user's mistake.
-        global_tool_errors.add_error(config_file, action_str, e)
-        raise ExpressionTemplateError(
-            f"Error occurred while {action_str.lower()} for tool '{tool.id}': {expression_error_message(e)}"
-        ) from e
     except Exception as e:
         # capture and log parsing errors
         global_tool_errors.add_error(config_file, action_str, e)
+        message = f"Error occurred while {action_str.lower()} for tool '{tool.id}'"
+        if isinstance(e, ExpressionTemplateError):
+            # The job runner reports these to the user; wrapping would hide the message.
+            raise ExpressionTemplateError(f"{message}: {e}") from e
+        if isinstance(e, WorkflowException) and isinstance(e.__cause__, ExpressionScriptError):
+            # The tool's JavaScript raised: the error names the user's mistake.
+            raise ExpressionTemplateError(f"{message}: {expression_error_message(e)}") from e
         raise ToolTemplatingException(
-            f"Error occurred while {action_str.lower()} for tool '{tool.id}'",
+            message,
             tool_id=tool.id,
             tool_version=tool.version,
             is_latest=tool.is_latest_version,

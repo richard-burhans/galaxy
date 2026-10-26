@@ -434,9 +434,21 @@ def test_unterminated_expression_reports_a_description():
 def test_expression_error_message_names_the_javascript_error():
     with pytest.raises(WorkflowException) as exc:
         do_eval("cat '$(inputs.x.elements[0].path)' > out.txt", {"x": []})
+    assert "<input>" in str(exc.value)
     message = expression_error_message(exc.value)
     assert message.startswith("TypeError"), message
     assert "<input>" not in message  # script positions are left out
+
+
+def test_expression_error_message_keeps_thrown_string_starting_with_at():
+    with pytest.raises(WorkflowException) as exc:
+        do_eval("${ throw 'at least one input is required'; }", {})
+    assert expression_error_message(exc.value) == "at least one input is required"
+
+
+def test_expression_error_message_names_a_timeout():
+    exc = WorkflowException("Expression evaluation error:\nInternalError: interrupted\n    at <eval> (<input>:8:3)\n")
+    assert expression_error_message(exc) == "InternalError: interrupted (the expression timed out)"
 
 
 def test_escaped_command_substitution_survives_evaluation():

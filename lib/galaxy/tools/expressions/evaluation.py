@@ -1,3 +1,4 @@
+import re
 from collections.abc import Sequence
 from typing import (
     cast,
@@ -26,9 +27,14 @@ from .js_engine import (
 # How much of an unparseable template is quoted back to its author.
 TEMPLATE_SNIPPET_LENGTH = 80
 
+# A QuickJS stack frame, e.g. "at f (<input>:8:43)", "at map (native)" or "at <input>:1:2".
+STACK_FRAME_RE = re.compile(r"^at (?:<input>:\d+:\d+|.+ \((?:<input>:\d+:\d+|native)\))$")
+# How QuickJS reports hitting the worker's CPU time limit.
+QUICKJS_INTERRUPTED = "InternalError: interrupted"
+
 
 class ExpressionTemplateError(MessageException):
-    """A ``$(...)``/``${...}`` block in a tool template does not parse."""
+    """A ``$(...)``/``${...}`` block in a tool template could not be parsed or evaluated; shown to the user."""
 
 
 def validate_expression_template(expression: str, description: str = "command template") -> None:
@@ -70,7 +76,8 @@ def _unterminated_message(expression: str, scan: str, consumed: int, description
 def expression_error_message(exc: Exception) -> str:
     """The JavaScript error from a failed evaluation (e.g. ``TypeError: ...``), without the script positions."""
     lines = [line.strip() for line in str(exc).splitlines()]
-    return next((line for line in lines[1:] if line and not line.startswith("at ")), lines[0] if lines else "")
+    message = next((line for line in lines[1:] if line and not STACK_FRAME_RE.match(line)), lines[0] if lines else "")
+    return f"{message} (the expression timed out)" if message == QUICKJS_INTERRUPTED else message
 
 
 def do_eval(
